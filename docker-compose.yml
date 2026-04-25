@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16
+    container_name: mmla-emr-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mmla
+      POSTGRES_PASSWORD: mmla_dev
+      POSTGRES_DB: mmla_emr           # this is the DB we want
+      # Prevent auto-connection to user-named DB
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mmla -d mmla_emr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

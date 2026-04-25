@@ -1,0 +1,55 @@
+import Image from "next/image";
+
+export default function Home() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-black dark:to-zinc-950 flex flex-col items-center justify-center p-6">
+      {/* Logo / Hero Image */}
+      <div className="mb-10">
+        <div className="p-4 bg-white rounded-xl shadow-sm inline-block">
+        <Image
+          src="/images/mmla-logo.webp"   // ← path from public/
+          alt="MMLA EMR Logo - Mobile Medical LA"
+          width={300}                    // original aspect ratio ~300×114
+          height={114}
+          priority                       // good for logo in hero
+          className="dark:invert bg-transparent"        // optional — inverts for dark mode
+        />
+        </div>
+      </div>
+
+      <div className="w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+        <div className="p-10 md:p-12 text-center md:text-left">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-zinc-900 dark:text-zinc-50 mb-6 tracking-tight">
+            Welcome to MMLA EMR
+          </h1>
+          
+          <p className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 mb-10 leading-relaxed">
+            Your modern, secure electronic medical records system is ready for development.
+            Start building patient portals, dashboards, and secure data flows.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+            <a
+              href="#"
+              className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
+            >
+              Get Started
+            </a>
+            <a
+              href="https://nextjs.org/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center px-8 py-4 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-50 font-semibold rounded-xl transition-all duration-200"
+            >
+              Documentation
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-12 text-sm text-zinc-500 dark:text-zinc-400">
+        Built with Next.js 16 • Tailwind CSS • Ready for Drizzle + shadcn/ui
+      </p>
+    </div>
+  );
+}
