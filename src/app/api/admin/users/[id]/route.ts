@@ -5,18 +5,12 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { logAudit } from "@/lib/audit";
-import { can } from "@/lib/authorize";
-
-function auditContext(req: NextRequest) {
-  return {
-    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined,
-    userAgent: req.headers.get("user-agent") ?? undefined,
-  };
-}
+import { can, Role } from "@/lib/authorize";
+import { auditContext } from "@/lib/api-utils";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -27,18 +21,21 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const id = parseInt(params.id, 10);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
     const body = await req.json();
-    const allowedRoles = ["admin", "staff", "rn", "pt"] as const;
-    type UserRole = (typeof allowedRoles)[number];
-    const updates: { isActive?: boolean; role?: UserRole; name?: string } = {};
+    const validRoles: readonly Role[] = ["admin", "staff", "rn", "pt"];
+    const updates: { isActive?: boolean; role?: Role; name?: string; phone?: string; jobTitle?: string; onCall?: boolean } = {};
     if (typeof body.isActive === "boolean") updates.isActive = body.isActive;
-    if (typeof body.role === "string" && allowedRoles.includes(body.role as UserRole)) updates.role = body.role as UserRole;
+    if (typeof body.role === "string" && (validRoles as readonly string[]).includes(body.role)) updates.role = body.role as Role;
     if (typeof body.name === "string") updates.name = body.name;
+    if (typeof body.phone === "string") updates.phone = body.phone;
+    if (typeof body.jobTitle === "string") updates.jobTitle = body.jobTitle;
+    if (typeof body.onCall === "boolean") updates.onCall = body.onCall;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

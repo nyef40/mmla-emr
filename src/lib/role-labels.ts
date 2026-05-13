@@ -6,8 +6,6 @@ const ROLE_LABELS: Record<string, string> = {
   staff: "Staff",
   rn: "Registered Nurse",
   pt: "Physical Therapist",
-  RN: "Registered Nurse",
-  PT: "Physical Therapist",
 };
 
 export function getRoleLabel(role: string): string {

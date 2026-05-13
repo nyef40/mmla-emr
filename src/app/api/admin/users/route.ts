@@ -1,16 +1,17 @@
-// src/app/api/admin/users/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import { can } from "@/lib/authorize";
+import { auditContext } from "@/lib/api-utils";
 import bcrypt from "bcryptjs";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "admin") {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const allUsers = await db.select({
@@ -19,47 +20,52 @@ export async function GET() {
     name: users.name,
     role: users.role,
     isActive: users.isActive,
+    phone: users.phone,
+    jobTitle: users.jobTitle,
+    onCall: users.onCall,
     lastLoginAt: users.lastLoginAt,
-  }).from(users);
+  }).from(users).orderBy(users.name);
 
-  return Response.json(allUsers);
+  return NextResponse.json(allUsers);
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!can(session.user.role, "users", "create")) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
-    const { email, name, password, role } = await req.json();
-    
+    const { email, name, password, role, phone, jobTitle } = await req.json();
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     const [newUser] = await db.insert(users).values({
       email,
-      name,
+      name: name ?? null,
       password: hashedPassword,
       role,
       isActive: true,
+      phone: phone ?? null,
+      jobTitle: jobTitle ?? null,
     }).returning();
 
+    const { ip, userAgent } = auditContext(req);
     await logAudit({
       userId: parseInt(session.user.id, 10),
       action: "create",
       tableName: "users",
       recordId: newUser.id,
       details: { email, role },
-      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined,
-      userAgent: req.headers.get("user-agent") ?? undefined,
+      ip,
+      userAgent,
     });
 
-    return Response.json({ id: newUser.id, email, name, role });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    return Response.json({ error: "Failed to create user" }, { status: 500 });
+    return NextResponse.json({ id: newUser.id, email, name, role });
+  } catch {
+    return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
   }
 }

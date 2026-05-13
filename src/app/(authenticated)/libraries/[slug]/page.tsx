@@ -7,15 +7,25 @@ import { useRouter, useParams } from "next/navigation";
 import { AppCard } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+// Slugs that have their own dedicated pages — redirect immediately
+const REDIRECTS: Record<string, string> = {
+  users:           "/admin/users",
+  patients:        "/patients",
+  "billing-codes": "/libraries/billing-codes",
+  pharmacy:        "/libraries/pharmacy",
+  insurance:       "/libraries/insurance",
+  physician:       "/libraries/physician",
+  referrer:        "/libraries/referrer",
+  "icd-codes":     "/libraries/icd-codes",
+  "dme-supply":    "/libraries/pharmacy",
+};
+
 const slugLabels: Record<string, string> = {
-  users: "Users",
-  patients: "Patients",
-  insurance: "Insurance",
-  physician: "Physician",
-  referrer: "Referrer",
-  pharmacy: "Pharmacy",
-  "dme-supply": "DME/Supply",
-  "billing-codes": "Billing Codes",
+  insurance:  "Insurance",
+  physician:  "Physician",
+  referrer:   "Referrer",
+  pharmacy:   "Pharmacy",
+  "dme-supply": "DME / Supply",
 };
 
 export default function LibrarySlugPage() {
@@ -23,13 +33,16 @@ export default function LibrarySlugPage() {
   const router = useRouter();
   const params = useParams();
   const slug = params.slug as string;
-  const title = slugLabels[slug] ?? slug;
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
-  }, [status, router]);
+    if (status === "unauthenticated") { router.push("/login"); return; }
+    const dest = REDIRECTS[slug];
+    if (dest) router.replace(dest);
+  }, [status, slug, router]);
 
-  if (status === "loading") return null;
+  if (status === "loading" || REDIRECTS[slug]) return null;
+
+  const title = slugLabels[slug] ?? slug;
 
   return (
     <div className="max-w-2xl mx-auto">

@@ -84,26 +84,26 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
 function AppCard({
   title,
   titleAction,
+  icon,
   children,
   className,
 }: {
   title: string;
   titleAction?: React.ReactNode;
+  icon?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition",
-        className
-      )}
-    >
-      <div className="bg-blue-600 text-white px-6 py-3 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">{title}</h2>
+    <div className={cn("bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden", className)}>
+      <div className="bg-[#1e5f8a] text-white px-4 py-2.5 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2">
+          {icon && <span className="opacity-90">{icon}</span>}
+          {title}
+        </h2>
         {titleAction}
       </div>
-      <div className="p-6">{children}</div>
+      <div className="p-4">{children}</div>
     </div>
   );
 }

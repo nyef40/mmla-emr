@@ -2,18 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { patients } from '@/db/schema';
-import { eq, ilike, and, desc, count } from 'drizzle-orm';
+import { eq, ilike, and, or, desc, count, inArray } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth/auth';
 import { logAudit } from '@/lib/audit';
 import { can } from '@/lib/authorize';
-
-function auditContext(req: NextRequest) {
-  return {
-    ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? undefined,
-    userAgent: req.headers.get('user-agent') ?? undefined,
-  };
-}
+import { auditContext } from '@/lib/api-utils';
+import { patientStaffAssignments } from '@/db/schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,9 +23,37 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    // Use 'or' to combine search conditions safely
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { or } = require('drizzle-orm');
+    // RN: only see patients explicitly assigned to them
+    if (session.user.role === "rn") {
+      const assignments = await db
+        .select({ patientId: patientStaffAssignments.patientId })
+        .from(patientStaffAssignments)
+        .where(
+          and(
+            eq(patientStaffAssignments.staffId, parseInt(session.user.id, 10)),
+            eq(patientStaffAssignments.isActive, true)
+          )
+        );
+      const ids = assignments.map(a => a.patientId);
+      if (ids.length === 0) {
+        return NextResponse.json({ data: [], pagination: { page, limit, total: 0, totalPages: 0 } });
+      }
+      const rnBase = search
+        ? and(
+            eq(patients.isActive, true),
+            inArray(patients.id, ids),
+            or(
+              ilike(patients.firstName, `%${search}%`),
+              ilike(patients.lastName, `%${search}%`),
+              ilike(patients.patientId, `%${search}%`),
+              ilike(patients.phone, `%${search}%`)
+            )
+          )
+        : and(eq(patients.isActive, true), inArray(patients.id, ids));
+      const data = await db.select().from(patients).where(rnBase).orderBy(desc(patients.createdAt)).limit(limit).offset(offset);
+      const total = await db.select({ count: count() }).from(patients).where(and(eq(patients.isActive, true), inArray(patients.id, ids)));
+      return NextResponse.json({ data, pagination: { page, limit, total: total[0].count, totalPages: Math.ceil(total[0].count / limit) } });
+    }
 
     const baseClause = search
       ? and(
@@ -111,9 +134,32 @@ export async function POST(request: NextRequest) {
     const [newPatient] = await db
       .insert(patients)
       .values({
-        ...body,
         patientId,
         ownerId: parseInt(session.user.id, 10),
+        firstName: body.firstName,
+        lastName: body.lastName,
+        dateOfBirth: new Date(body.dateOfBirth),
+        gender: body.gender,
+        phone: body.phone ?? null,
+        email: body.email ?? null,
+        address: body.address ?? null,
+        bloodType: body.bloodType ?? null,
+        allergies: body.allergies ?? null,
+        medicalConditions: body.medicalConditions ?? null,
+        medications: body.medications ?? null,
+        emergencyContact: body.emergencyContact ?? null,
+        notes: body.notes ?? null,
+        socDate: body.socDate ?? null,
+        admissionStatus: body.admissionStatus ?? "admitted",
+        codeStatus: body.codeStatus ?? "full_code",
+        primaryDiagnosis: body.primaryDiagnosis ?? null,
+        otherDiagnoses: body.otherDiagnoses ?? null,
+        insurancePrimary: body.insurancePrimary ?? null,
+        insuranceSecondary: body.insuranceSecondary ?? null,
+        physicianName: body.physicianName ?? null,
+        physicianPhone: body.physicianPhone ?? null,
+        physicianNpi: body.physicianNpi ?? null,
+        intakeData: body.intakeData ?? null,
       })
       .returning();
 

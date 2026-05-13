@@ -13,9 +13,9 @@ const libraryCards = [
   { title: "Insurance", href: "/libraries/insurance" },
   { title: "Physician", href: "/libraries/physician" },
   { title: "Referrer", href: "/libraries/referrer" },
-  { title: "Pharmacy", href: "/libraries/pharmacy" },
-  { title: "DME/Supply", href: "/libraries/dme-supply" },
+  { title: "Pharmacy & DME", href: "/libraries/pharmacy" },
   { title: "Billing Codes", href: "/libraries/billing-codes" },
+  { title: "ICD-10 Codes", href: "/libraries/icd-codes" },
 ];
 
 export default function LibrariesPage() {

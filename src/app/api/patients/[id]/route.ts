@@ -1,23 +1,17 @@
 // src/app/api/patients/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { patients } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { patients, patientStaffAssignments } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth/auth';
 import { logAudit } from '@/lib/audit';
 import { can, mustMatchOwner } from '@/lib/authorize';
-
-function auditContext(req: NextRequest) {
-  return {
-    ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? undefined,
-    userAgent: req.headers.get('user-agent') ?? undefined,
-  };
-}
+import { auditContext } from '@/lib/api-utils';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,8 +19,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const patient = await db.query.patients.findFirst({
-      where: eq(patients.id, parseInt(params.id)),
+      where: eq(patients.id, parseInt(id)),
     });
 
     if (!patient) {
@@ -35,6 +30,17 @@ export async function GET(
 
     if (!mustMatchOwner(session.user.role, patient.ownerId, session.user.id)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (session.user.role === "rn") {
+      const assignment = await db.query.patientStaffAssignments.findFirst({
+        where: and(
+          eq(patientStaffAssignments.patientId, patient.id),
+          eq(patientStaffAssignments.staffId, parseInt(session.user.id, 10)),
+          eq(patientStaffAssignments.isActive, true)
+        ),
+      });
+      if (!assignment) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     return NextResponse.json(patient);
@@ -49,7 +55,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -60,7 +66,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const recordId = parseInt(params.id, 10);
+    const { id } = await params;
+    const recordId = parseInt(id, 10);
     const patient = await db.query.patients.findFirst({
       where: eq(patients.id, recordId),
     });
@@ -71,11 +78,37 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const b = await request.json();
+
+    // Explicit field mapping — never spread raw request body into Drizzle set()
+    // because type coercion (ISO string → timestamp, date string → date) throws at runtime.
     const [updatedPatient] = await db
       .update(patients)
       .set({
-        ...body,
+        ...(b.firstName !== undefined   && { firstName:   b.firstName }),
+        ...(b.lastName !== undefined    && { lastName:    b.lastName }),
+        ...(b.dateOfBirth !== undefined && { dateOfBirth: new Date(b.dateOfBirth) }),
+        ...(b.gender !== undefined      && { gender:      b.gender }),
+        ...(b.phone !== undefined       && { phone:       b.phone ?? null }),
+        ...(b.email !== undefined       && { email:       b.email ?? null }),
+        ...(b.address !== undefined     && { address:     b.address ?? null }),
+        ...(b.bloodType !== undefined   && { bloodType:   b.bloodType ?? null }),
+        ...(b.allergies !== undefined   && { allergies:   b.allergies ?? null }),
+        ...(b.medications !== undefined && { medications: b.medications ?? null }),
+        ...(b.notes !== undefined       && { notes:       b.notes ?? null }),
+        ...(b.socDate !== undefined     && { socDate:     b.socDate ?? null }),
+        ...(b.admissionStatus !== undefined && { admissionStatus: b.admissionStatus }),
+        ...(b.codeStatus !== undefined      && { codeStatus:      b.codeStatus }),
+        ...(b.primaryDiagnosis !== undefined   && { primaryDiagnosis:  b.primaryDiagnosis ?? null }),
+        ...(b.otherDiagnoses !== undefined     && { otherDiagnoses:    b.otherDiagnoses ?? null }),
+        ...(b.insurancePrimary !== undefined   && { insurancePrimary:  b.insurancePrimary ?? null }),
+        ...(b.insuranceSecondary !== undefined && { insuranceSecondary: b.insuranceSecondary ?? null }),
+        ...(b.physicianName !== undefined  && { physicianName:  b.physicianName ?? null }),
+        ...(b.physicianPhone !== undefined && { physicianPhone: b.physicianPhone ?? null }),
+        ...(b.physicianNpi !== undefined   && { physicianNpi:   b.physicianNpi ?? null }),
+        ...(b.emergencyContact !== undefined && { emergencyContact: b.emergencyContact ?? null }),
+        ...(b.intakeData !== undefined       && { intakeData:       b.intakeData ?? null }),
+        ...(b.isActive !== undefined         && { isActive:         b.isActive }),
         updatedAt: new Date(),
       })
       .where(eq(patients.id, recordId))
@@ -87,7 +120,7 @@ export async function PUT(
       action: "update",
       tableName: "patients",
       recordId,
-      details: { changes: body },
+      details: { changes: b },
       ip,
       userAgent,
     });
@@ -104,7 +137,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -115,7 +148,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const recordId = parseInt(params.id, 10);
+    const { id } = await params;
+    const recordId = parseInt(id, 10);
     const patient = await db.query.patients.findFirst({
       where: eq(patients.id, recordId),
     });

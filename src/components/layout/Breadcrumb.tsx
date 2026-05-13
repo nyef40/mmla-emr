@@ -8,14 +8,20 @@ const routeLabels: Record<string, string> = {
   home: "Home",
   dashboard: "Dashboard",
   patients: "Patients",
+  chart: "Patient Chart",
   appointments: "Appointments",
   admin: "Admin",
   users: "User Management",
   new: "New User",
   libraries: "Libraries",
+  billing: "Billing",
+  claims: "Claims",
+  charges: "Charge Load",
+  "pre-audit": "Pre-Audit",
+  payroll: "Payroll",
 };
 
-export function Breadcrumb() {
+export function Breadcrumb({ className }: { className?: string }) {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
 
@@ -29,14 +35,14 @@ export function Breadcrumb() {
   if (crumbs.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+    <nav className={`flex items-center gap-1 text-sm ${className ?? "text-muted-foreground"}`}>
       {crumbs.map((crumb, i) => (
         <span key={crumb.href} className="flex items-center gap-1">
-          {i > 0 && <ChevronRight className="h-4 w-4" />}
+          {i > 0 && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
           {crumb.isLast ? (
-            <span className="font-medium text-foreground">{crumb.label}</span>
+            <span className="font-medium">{crumb.label}</span>
           ) : (
-            <Link href={crumb.href} className="cursor-pointer hover:text-foreground">
+            <Link href={crumb.href} className="cursor-pointer opacity-80 hover:opacity-100">
               {crumb.label}
             </Link>
           )}

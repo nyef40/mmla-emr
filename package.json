@@ -45,6 +45,7 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "babel-plugin-react-compiler": "1.0.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.4",

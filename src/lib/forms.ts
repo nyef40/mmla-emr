@@ -36,10 +36,11 @@ export const formsByRole = {
       "OASIS RN Transfer",
     ],
     clinical: [
-      "Nursing Visit Note",
+      "SKILLED NURSE INFUSION VISIT NOTE",
       "Nursing Assessment",
       "Nursing Care Plan",
       "Skilled Nursing Discharge Summary",
+      "I-RODS Disability Scale",
     ],
     shared: [
       "Care Coordination Note",
@@ -49,7 +50,7 @@ export const formsByRole = {
   },
   staff: {
     oasis: ["OASIS Intake", "OASIS Administrative"],
-    clinical: ["Staff Visit Note", "Staff Assessment"],
+    clinical: ["Staff Visit Note", "Staff Assessment", "I-RODS Disability Scale"],
     shared: [
       "Care Coordination Note",
       "Inter-Office Communication Note",
@@ -58,7 +59,7 @@ export const formsByRole = {
   },
   admin: {
     oasis: ["OASIS Admin Overview", "OASIS Compliance"],
-    clinical: ["Admin Clinical Review", "Admin Reports"],
+    clinical: ["Admin Clinical Review", "Admin Reports", "I-RODS Disability Scale"],
     shared: [
       "Care Coordination Note",
       "Inter-Office Communication Note",
