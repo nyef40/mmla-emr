@@ -71,7 +71,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-md w-96 transition hover:shadow-lg">
+      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md w-full max-w-sm mx-4 transition hover:shadow-lg">
         <h1 className="text-xl font-bold text-center mb-2">MMLA EMR</h1>
         <p className="text-sm text-gray-600 text-center mb-6">Sign in to access the system</p>
         <form onSubmit={handleSubmit} className="space-y-4">

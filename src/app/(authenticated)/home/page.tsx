@@ -198,10 +198,10 @@ export default function HomePage() {
 
         {/* ── 1. Patients: compact top section ── */}
         <AppCard title="Patients" icon={<Users className="h-4 w-4" />}>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <span className="text-xs text-gray-500 shrink-0">Select patient:</span>
             <select
-              className="flex-1 h-8 rounded border border-gray-300 bg-white px-2 text-sm text-gray-700 min-w-0"
+              className="w-full sm:flex-1 h-8 rounded border border-gray-300 bg-white px-2 text-sm text-gray-700 min-w-0"
               value={selectedPatientId}
               onChange={e => setSelectedPatientId(e.target.value)}
             >
@@ -214,7 +214,7 @@ export default function HomePage() {
             </select>
             <Button
               size="sm"
-              className="h-8 bg-[#1e5f8a] hover:bg-[#174f75] text-white text-xs px-3 shrink-0"
+              className="h-8 bg-[#1e5f8a] hover:bg-[#174f75] text-white text-xs px-3 shrink-0 w-full sm:w-auto"
               disabled={!selectedPatientId}
               onClick={() => selectedPatientId && router.push(`/patients/${selectedPatientId}`)}
             >
@@ -256,9 +256,9 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="grid grid-cols-[160px_1fr_160px] gap-0 divide-x divide-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-[160px_1fr_160px] gap-4 md:gap-0 md:divide-x divide-gray-100">
             {/* OASIS Forms */}
-            <div className="pr-5">
+            <div className="md:pr-5">
               <FormColumn
                 heading="OASIS Forms"
                 forms={OASIS_FORMS}
@@ -269,11 +269,11 @@ export default function HomePage() {
             </div>
 
             {/* Clinical Forms */}
-            <div className="px-5">
+            <div className="md:px-5">
               <p className="font-bold text-[10px] uppercase tracking-widest text-gray-500 mb-2 pb-1 border-b border-gray-200">
                 Clinical Forms
               </p>
-              <ul className="columns-2 gap-x-6 space-y-0">
+              <ul className="columns-1 sm:columns-2 gap-x-6 space-y-0">
                 {CLINICAL_FORMS.map(({ name, developed, visitType }) => {
                   if (developed) {
                     return (
@@ -297,7 +297,7 @@ export default function HomePage() {
             </div>
 
             {/* Shared Forms */}
-            <div className="pl-5">
+            <div className="md:pl-5">
               <FormColumn
                 heading="Shared Forms"
                 forms={SHARED_FORMS}

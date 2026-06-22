@@ -6,6 +6,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { logAudit } from "@/lib/audit";
 import { can, Role } from "@/lib/authorize";
+import { isPrimaryAdmin } from "@/lib/admin";
 import { auditContext } from "@/lib/api-utils";
 
 export async function PATCH(
@@ -36,6 +37,16 @@ export async function PATCH(
     if (typeof body.phone === "string") updates.phone = body.phone;
     if (typeof body.jobTitle === "string") updates.jobTitle = body.jobTitle;
     if (typeof body.onCall === "boolean") updates.onCall = body.onCall;
+
+    const primary = isPrimaryAdmin(session.user.email);
+    const restrictedFields = ["isActive", "name", "phone", "jobTitle"] as const;
+    const hasRestricted = restrictedFields.some((f) => f in updates);
+    if (hasRestricted && !primary) {
+      return NextResponse.json(
+        { error: "Only the primary administrator can activate/deactivate or edit user profiles." },
+        { status: 403 }
+      );
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

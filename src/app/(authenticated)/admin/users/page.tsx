@@ -11,8 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { UserPlus, Loader2, Phone } from "lucide-react";
+import { UserPlus, Loader2, Phone, Pencil } from "lucide-react";
 import { getRoleLabel } from "@/lib/role-labels";
+import { isPrimaryAdmin } from "@/lib/admin";
 
 const ROLES = ["admin", "staff", "rn", "pt"] as const;
 
@@ -40,6 +41,12 @@ export default function AdminUsersPage() {
     email: "", name: "", password: "", role: "rn" as string,
     phone: "", jobTitle: "",
   });
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", jobTitle: "", phone: "" });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const canManageProfiles = isPrimaryAdmin(session?.user?.email);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -92,6 +99,45 @@ export default function AdminUsersPage() {
     }
   };
 
+  const openEdit = (user: User) => {
+    setEditUser(user);
+    setEditForm({
+      name: user.name ?? "",
+      jobTitle: user.jobTitle ?? "",
+      phone: user.phone ?? "",
+    });
+    setEditError("");
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser) return;
+    setEditError("");
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${editUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          jobTitle: editForm.jobTitle.trim(),
+          phone: editForm.phone.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error || "Failed to update user.");
+        return;
+      }
+      setEditUser(null);
+      fetchUsers();
+    } catch {
+      setEditError("An error occurred. Please try again.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const patch = async (userId: number, body: Record<string, unknown>) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
@@ -110,12 +156,12 @@ export default function AdminUsersPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-gray-600 mt-1">Create users, assign roles, and manage contact details</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button asChild variant="outline"><Link href="/home">Back to Home</Link></Button>
 
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -146,7 +192,7 @@ export default function AdminUsersPage() {
                     <select
                       value={form.role}
                       onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                      className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm"
                     >
                       {ROLES.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
                     </select>
@@ -173,8 +219,54 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      {/* Edit user dialog — primary admin only */}
+      <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update contact details for {editUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-3">
+            <div className="space-y-1">
+              <Label>Full Name</Label>
+              <Input
+                value={editForm.name}
+                onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                placeholder="Joy Pleasant"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Job Title</Label>
+              <Input
+                value={editForm.jobTitle}
+                onChange={e => setEditForm(p => ({ ...p, jobTitle: e.target.value }))}
+                placeholder="RN, PT, Admin…"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Cell Phone</Label>
+              <Input
+                type="tel"
+                value={editForm.phone}
+                onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                placeholder="(310) 555-0100"
+              />
+            </div>
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditUser(null)}>Cancel</Button>
+              <Button type="submit" disabled={editLoading}>
+                {editLoading ? "Saving…" : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -206,7 +298,7 @@ export default function AdminUsersPage() {
                     <select
                       value={user.role}
                       onChange={e => patch(user.id, { role: e.target.value })}
-                      className="flex h-8 w-24 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                      className="flex h-8 w-24 rounded-md border border-input bg-white px-2 py-1 text-xs"
                     >
                       {ROLES.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
                     </select>
@@ -214,7 +306,7 @@ export default function AdminUsersPage() {
                   <TableCell className="text-sm">{user.jobTitle ?? "—"}</TableCell>
                   <TableCell>
                     {user.phone
-                      ? <a href={`tel:${user.phone}`} className="flex items-center gap-1 text-sm text-blue-700 hover:underline"><Phone className="h-3 w-3" />{user.phone}</a>
+                      ? <span className="flex items-center gap-1 text-sm text-gray-700"><Phone className="h-3 w-3 shrink-0" />{user.phone}</span>
                       : <span className="text-gray-400 text-sm">—</span>
                     }
                   </TableCell>
@@ -235,9 +327,30 @@ export default function AdminUsersPage() {
                     {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => patch(user.id, { isActive: !(user.isActive ?? true) })}>
-                      {(user.isActive ?? true) ? "Deactivate" : "Activate"}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {canManageProfiles && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEdit(user)}
+                            title="Edit user"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => patch(user.id, { isActive: !(user.isActive ?? true) })}
+                          >
+                            {(user.isActive ?? true) ? "Deactivate" : "Activate"}
+                          </Button>
+                        </>
+                      )}
+                      {!canManageProfiles && (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

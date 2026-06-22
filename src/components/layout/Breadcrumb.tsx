@@ -35,14 +35,14 @@ export function Breadcrumb({ className }: { className?: string }) {
   if (crumbs.length === 0) return null;
 
   return (
-    <nav className={`flex items-center gap-1 text-sm ${className ?? "text-muted-foreground"}`}>
+    <nav className={`flex items-center gap-1 text-sm min-w-0 overflow-hidden ${className ?? "text-muted-foreground"}`}>
       {crumbs.map((crumb, i) => (
-        <span key={crumb.href} className="flex items-center gap-1">
-          {i > 0 && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
+        <span key={crumb.href} className="flex items-center gap-1 min-w-0 shrink">
+          {i > 0 && <ChevronRight className="h-3.5 w-3.5 opacity-60 shrink-0" />}
           {crumb.isLast ? (
-            <span className="font-medium">{crumb.label}</span>
+            <span className="font-medium truncate">{crumb.label}</span>
           ) : (
-            <Link href={crumb.href} className="cursor-pointer opacity-80 hover:opacity-100">
+            <Link href={crumb.href} className="cursor-pointer opacity-80 hover:opacity-100 truncate hidden sm:inline">
               {crumb.label}
             </Link>
           )}

@@ -9,7 +9,7 @@ export default function AuthenticatedLayout({
   return (
     <ProtectedShell>
       <Card className="w-full min-h-0 flex flex-col">
-        <CardContent className="flex-1 pt-6">{children}</CardContent>
+        <CardContent className="flex-1 pt-4 sm:pt-6 px-3 sm:px-6">{children}</CardContent>
       </Card>
     </ProtectedShell>
   );
