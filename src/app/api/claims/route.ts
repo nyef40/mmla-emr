@@ -27,13 +27,23 @@ export async function GET(request: NextRequest) {
     where: conditions.length > 0 ? and(...conditions) : undefined,
     orderBy: desc(claims.createdAt),
     with: {
-      patient: { columns: { id: true, firstName: true, lastName: true, patientId: true } },
+      patient:   { columns: { id: true, firstName: true, lastName: true, patientId: true } },
       insurance: { columns: { id: true, name: true } },
-      visit: { columns: { id: true, visitType: true, visitDate: true } },
+      visit:     { columns: { id: true, visitType: true, visitDate: true } },
+      payments:  { columns: { amount: true } },
     },
   });
 
-  return NextResponse.json(rows, { headers: { "Cache-Control": "no-store" } });
+  // Compute paid total per claim
+  const withPaid = rows.map(r => ({
+    ...r,
+    paidAmount: r.payments.length > 0
+      ? r.payments.reduce((s, p) => s + parseFloat(p.amount), 0).toFixed(2)
+      : null,
+    payments: undefined,
+  }));
+
+  return NextResponse.json(withPaid, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: NextRequest) {

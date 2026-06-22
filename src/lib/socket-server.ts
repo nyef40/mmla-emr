@@ -7,9 +7,12 @@ import type { Server as HttpServer } from 'http';
 import type { Server as HttpsServer } from 'https';
 
 export function initializeSocketServer(server: HttpServer | HttpsServer) {
+  const appOrigin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
   io = new Server(server, {
+    path: '/api/socket',
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      origin: [appOrigin, 'http://localhost:3000'],
       methods: ['GET', 'POST'],
     },
   });

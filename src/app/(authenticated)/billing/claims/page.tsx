@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Download, Pencil, Check, X } from "lucide-react";
 
@@ -16,6 +15,7 @@ type ClaimRow = {
   claimNumber: string | null;
   status: string;
   totalAmount: string | null;
+  paidAmount: string | null;
   submittedDate: string | null;
   periodStart: string | null;
   periodEnd: string | null;
@@ -185,15 +185,14 @@ export default function ClaimsPage() {
                 <th className="px-3 py-2.5 font-medium">Period</th>
                 <th className="px-3 py-2.5 font-medium">ICN / 277CA</th>
                 <th className="px-3 py-2.5 font-medium">Status</th>
-                <th className="px-3 py-2.5 font-medium text-right">Total</th>
-                <th className="px-3 py-2.5 font-medium">Date</th>
+                <th className="px-3 py-2.5 font-medium text-right">Billed / Paid</th>
                 <th className="px-3 py-2.5 font-medium w-28" />
               </tr>
             </thead>
             <tbody>
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                     {search ? "No claims match your search." : "No claims yet."}
                   </td>
                 </tr>
@@ -209,10 +208,9 @@ export default function ClaimsPage() {
                   </td>
                   <td className="px-3 py-2 text-gray-600">{c.insurance?.name ?? <span className="text-gray-300">—</span>}</td>
                   <td className="px-3 py-2 text-gray-600 tabular-nums">
-                    {c.periodStart && c.periodEnd ? (
-                      <div>{c.periodStart.slice(5)} – {c.periodEnd.slice(5)}</div>
-                    ) : <div className="text-gray-300">—</div>}
-                    {c.tobCode && <div className="text-gray-400 text-[10px]">TOB: {c.tobCode}</div>}
+                    {c.periodStart && c.periodEnd
+                      ? `${c.periodStart.slice(5)} – ${c.periodEnd.slice(5)}`
+                      : <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-3 py-2">
                     {editIcn === c.id ? (
@@ -238,9 +236,11 @@ export default function ClaimsPage() {
                     )}
                   </td>
                   <td className="px-3 py-2"><StatusBadge status={c.status} /></td>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">{fmt(c.totalAmount)}</td>
-                  <td className="px-3 py-2 text-gray-500">
-                    {new Date(c.createdAt).toLocaleDateString()}
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    <div className="font-medium">{fmt(c.totalAmount)}</div>
+                    {c.paidAmount && (
+                      <div className="text-[11px] text-emerald-600 font-normal">{fmt(c.paidAmount)} paid</div>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, Calculator, ChevronDown, ChevronRight, FileText, Download } from "lucide-react";
+import { Trash2, Calculator, ChevronDown, ChevronRight, FileText, Download, Pencil, Check, X } from "lucide-react";
 import { FY2026, lookupCaseWeight, lookupWageIndex, WAGE_INDICES, calcPps, calcFinal } from "@/lib/pdgm";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -28,6 +28,7 @@ type Payment = {
 type Claim = {
   id: number;
   claimNumber: string | null;
+  icn: string | null;
   status: string;
   totalAmount: string | null;
   submittedDate: string | null;
@@ -84,6 +85,68 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
     <div>
       <p className="text-xs text-gray-500 mb-0.5">{label}</p>
       <p className="text-sm font-medium text-gray-800">{value ?? <span className="text-gray-400">—</span>}</p>
+    </div>
+  );
+}
+
+function EditableInfoRow({ label, value, field, claimId, onSaved, mono }: {
+  label: string;
+  value: string | null;
+  field: string;
+  claimId: number;
+  onSaved: (newValue: string | null) => void;
+  mono?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(value ?? "");
+  const [saving,  setSaving]  = useState(false);
+
+  function startEdit() { setDraft(value ?? ""); setEditing(true); }
+  function cancel()    { setEditing(false); }
+
+  async function save() {
+    setSaving(true);
+    const res = await fetch(`/api/claims/${claimId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: draft || null }),
+    });
+    if (res.ok) { onSaved(draft || null); setEditing(false); }
+    setSaving(false);
+  }
+
+  return (
+    <div>
+      <p className="text-xs text-gray-500 mb-0.5">{label}</p>
+      {editing ? (
+        <span className="flex items-center gap-1">
+          <input
+            autoFocus
+            className={`border rounded px-1.5 py-0.5 text-xs w-40 ${mono ? "font-mono" : ""}`}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          />
+          <button onClick={save} disabled={saving} className="text-green-600 hover:text-green-800 disabled:opacity-40">
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={cancel} className="text-gray-400 hover:text-gray-600">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </span>
+      ) : (
+        <span className="flex items-center gap-1 group">
+          <span className={`text-sm font-medium text-gray-800 ${mono ? "font-mono" : ""}`}>
+            {value ?? <span className="text-gray-400">—</span>}
+          </span>
+          <button
+            onClick={startEdit}
+            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-[#1e5f8a] transition-opacity"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        </span>
+      )}
     </div>
   );
 }
@@ -1039,7 +1102,22 @@ export default function ClaimDetailPage() {
             : null
           }
         />
-        <InfoRow label="Claim Number" value={claim.claimNumber} />
+        <EditableInfoRow
+          label="Claim Number"
+          value={claim.claimNumber}
+          field="claimNumber"
+          claimId={claim.id}
+          mono
+          onSaved={v => setClaim(c => c ? { ...c, claimNumber: v } : c)}
+        />
+        <EditableInfoRow
+          label="ICN / 277CA"
+          value={claim.icn}
+          field="icn"
+          claimId={claim.id}
+          mono
+          onSaved={v => setClaim(c => c ? { ...c, icn: v } : c)}
+        />
         <InfoRow label="Submitted Date" value={claim.submittedDate} />
         <InfoRow label="Total Billed" value={fmt(claim.totalAmount)} />
         {claim.notes && (
